@@ -20,9 +20,27 @@ class kDTree
 {
 private:
     int k;
-    kDTreeNode *root;
+    // Helpers:
+    void clear() const;
+    void clear_helper(kDTreeNode *node) const;
+    void copy_helper(kDTreeNode *node);
+    
+    string inorder_helper(kDTreeNode *node) const;
+    string preorder_helper(kDTreeNode *node) const;
+    string postorder_helper(kDTreeNode *node) const;
 
+    int height_record(kDTreeNode *node) const;
+    int count_helper(kDTreeNode *node) const;
+    int leaf_count_helper(kDTreeNode *node) const;
+
+    kDTreeNode *insert_helper(kDTreeNode *node, const vector<int> &point, int idx);
+    kDTreeNode *find_replacement_helper(kDTreeNode *node, int divisor, int idx, int &dim);
+    kDTreeNode *delete_helper(kDTreeNode *node, const vector<int> &point, int idx);
+    bool search_helper(kDTreeNode *node, const vector<int> &point, int idx);
+
+    void neighbour_finder(kDTreeNode *node, const vector<int> &target, kDTreeNode *best, int idx, long &best_distance);
 public:
+    kDTreeNode *root;
     kDTree(int k = 2);
     ~kDTree();
 
