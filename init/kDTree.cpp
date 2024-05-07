@@ -265,6 +265,7 @@ bool kDTree::search_helper(kDTreeNode *node, const vector<int> &point, int idx) 
     if(node == NULL) return false;
     // if on the left
     if(point[idx] < node->data[idx]) return search_helper(node->left, point, (idx + 1) % (this->k));
+    if(point[idx] > node->data[idx]) return search_helper(node->right, point, (idx + 1) % (this->k));
     // assume we found the node
     bool find_flag = true;
     // if not at left
@@ -341,50 +342,53 @@ void kDTree::buildTree(const vector<vector<int>> &pointList)
     this->root = build_helper(list, 0, list.size() - 1, 0);
 };
 
-void kDTree::neighbour_finder(kDTreeNode *node, const vector<int> &target, kDTreeNode *&best, int idx, long &best_distance) {
+long kDTree::distance(const vector<int> &v1, const vector<int> &v2) {
+    long best_distance = 0;
+    for(int i = 0; i < this->k; ++i) best_distance += (long)abs(pow(v1[i] - v2[i], 2));
+    return best_distance;
+}
+
+void kDTree::neighbour_finder(kDTreeNode *node, const vector<int> &target, kDTreeNode *&best, int idx) {
     if(!node) return;
     // cout << "CURR : " << printkDTreeNode(*node) << " BEST : " << printkDTreeNode(*best) << endl;
     int dir = 0;
     if(target[idx] < node->data[idx]) {
         if(!node->left) {
-            for(int i = 0; i < this->k; ++i)
-                best_distance += (long)abs(pow(target[i] - node->data[i], 2));
-            best = node;
+            if(!best || distance(target, node->data) < distance(target, best->data)) {
+                best = node;
+            }
             return;
         }
-        neighbour_finder(node->left, target, best, (idx + 1) % (this->k), best_distance);
+        neighbour_finder(node->left, target, best, (idx + 1) % (this->k));
         dir = 1;
     }
     else {
         if(!node->right) {
-            for(int i = 0; i < this->k; ++i)
-                best_distance += (long)abs(pow(target[i] - node->data[i], 2));
-            best = node;
+            if(!best || distance(target, node->data) < distance(target, best->data)) {
+                best = node;
+            }
             return;
         }
-        neighbour_finder(node->right, target, best, (idx + 1) % (this->k), best_distance);
+        neighbour_finder(node->right, target, best, (idx + 1) % (this->k));
         dir = -1;
     }
 
-    long curr_distance = 0;
-    for(int i = 0; i < this->k; ++i)
-        curr_distance += (long)abs(pow(target[i] - node->data[i], 2));
+    long curr_distance = distance(target, node->data);
+    long best_distance = distance(target, best->data);
     if(curr_distance < best_distance) {
-        best_distance = curr_distance;
         best = node;
     }
+
     long plane_distance = abs(pow(target[idx] - node->data[idx], 2));
     if(best_distance >= plane_distance) {
-        best_distance = plane_distance;
-        if(dir == -1) neighbour_finder(node->left, target, best, (idx + 1) % (this->k), best_distance);
-        if(dir == 1) neighbour_finder(node->right, target, best, (idx + 1) % (this->k), best_distance);
+        if(dir != 1) neighbour_finder(node->left, target, best, (idx + 1) % (this->k));
+        if(dir != -1) neighbour_finder(node->right, target, best, (idx + 1) % (this->k));
     }
 };
 void kDTree::nearestNeighbour(const vector<int> &target, kDTreeNode *&best)
 {
-    long best_distance = 0;
     best = this->root;
-    neighbour_finder(this->root, target, best, 0, best_distance);
+    neighbour_finder(this->root, target, best, 0);
     // cout << printkDTreeNode(*best) << endl;
 };
 
@@ -394,10 +398,13 @@ void kDTree::kNearestNeighbour(const vector<int> &target, int k, vector<kDTreeNo
     int number_of_neighbour = 0;
     kDTreeNode *neighbour = temp.root;
     while(number_of_neighbour < k) {
+        cout << number_of_neighbour << ": ";
         temp.nearestNeighbour(target, neighbour);
         kDTreeNode *return_val = new kDTreeNode(neighbour->data);
         bestList.push_back(return_val);
+        temp.preorderTraversal();
         temp.remove(neighbour->data);
+        cout << endl;
         neighbour = temp.root;
         ++number_of_neighbour;
     }

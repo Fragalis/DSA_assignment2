@@ -3,6 +3,9 @@
 /* TODO: Please design your data structure carefully so that you can work with the given dataset
  *       in this assignment. The below structures are just some suggestions.
  */
+
+#define INT_MAX 2147483647
+
 struct kDTreeNode
 {
     vector<int> data;
@@ -63,7 +66,9 @@ private:
     void merge_sort_helper(vector<vector<int>> &pointList, int start, int end, int idx) const;
     kDTreeNode *build_helper(vector<vector<int>> &pointList, int start, int end, int idx);
 
-    void neighbour_finder(kDTreeNode *node, const vector<int> &target, kDTreeNode *&best, int idx, long &best_distance);
+    // Finder Helpers
+    long distance(const vector<int> &v1, const vector<int> &v2);
+    void neighbour_finder(kDTreeNode *node, const vector<int> &target, kDTreeNode *&best, int idx);
 public:
     kDTreeNode *root;
     kDTree(int k = 2);
