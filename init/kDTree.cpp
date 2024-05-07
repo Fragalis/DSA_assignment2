@@ -2,22 +2,7 @@
 
 /* TODO: You can implement methods, functions that support your data structures here.
  * */
-
-string printkDTreeNode(const kDTreeNode &node) {
-    stringstream ss;
-    ss << "(";
-    if(node.data.size() > 0) {
-        ss << node.data[0];
-        for(int i = 1; i < node.data.size(); ++i) {
-            ss << ",";
-            ss << node.data[i];
-        }
-    }
-    ss << ")";
-    return ss.str();
-}
-
-kDTree::kDTree(int k = 2)
+kDTree::kDTree(int k)
 {
     this->k = k;
     this->root = nullptr;
@@ -63,43 +48,58 @@ kDTree::kDTree(const kDTree &other)
     copy_helper(traverse);
 };
 
-string kDTree::inorder_helper(kDTreeNode *node) const {
-    if(node == NULL) return "";
-    string res = "";
-    if(node->left) res += (inorder_helper(node->left) + " ");
-    res += printkDTreeNode(*node);
-    if(node->right) res += (" " + inorder_helper(node->right));
-    return res;
+void kDTree::inorder_helper(kDTreeNode *node) const {
+    if(node == NULL) return;
+    // string res = "";
+    if(node->left) {
+        inorder_helper(node->left);
+        cout << " ";
+    }
+    cout << *node;
+    if(node->right) {
+        cout << " ";
+        inorder_helper(node->right);
+    }
 }
 void kDTree::inorderTraversal() const
 {
-    cout << inorder_helper(this->root);
+    inorder_helper(this->root);
 };
 
-string kDTree::preorder_helper(kDTreeNode *node) const {
-    if(node == NULL) return "";
-    string res = "";
-    res += printkDTreeNode(*node);
-    if(node->left) res += (" " + preorder_helper(node->left));
-    if(node->right) res += (" " + preorder_helper(node->right));
-    return res;
-};
+void kDTree::preorder_helper(kDTreeNode *node) const {
+    if(node == NULL) return;
+    // string res = "";
+    cout << *node;
+    if(node->left) {
+        cout << " ";
+        preorder_helper(node->left);
+    }
+    if(node->right) {
+        cout << " ";
+        preorder_helper(node->right);
+    }
+}
 void kDTree::preorderTraversal() const
 {
-    cout << preorder_helper(this->root);
+    preorder_helper(this->root);
 };
 
-string kDTree::postorder_helper(kDTreeNode *node) const {
-    if(node == NULL) return "";
-    string res = "";
-    if(node->left) res += (postorder_helper(node->left) + " ");
-    if(node->right) res += (postorder_helper(node->right) + " ");
-    res += printkDTreeNode(*node);
-    return res;
-};
+void kDTree::postorder_helper(kDTreeNode *node) const {
+    if(node == NULL) return;
+    // string res = "";
+    if(node->left) {
+        postorder_helper(node->left);
+        cout << " ";
+    }
+    if(node->right) {
+        postorder_helper(node->right);
+        cout << " ";
+    }
+    cout << *node;
+}
 void kDTree::postorderTraversal() const
 {
-    cout << postorder_helper(this->root);
+    postorder_helper(this->root);
 };
 
 int kDTree::height_record(kDTreeNode *node) const {
@@ -149,6 +149,20 @@ void kDTree::insert(const vector<int> &point)
     this->root = insert_helper(this->root, point, 0);
 };
 
+kDTreeNode *kDTree::find_parent_node_helper(kDTreeNode *node, const kDTreeNode &finder, int &dir) {
+    if(!node) return NULL;
+    if(node->left && node->left == &finder) {
+        dir = -1;
+        return node;
+    }
+    if(node->right && node->right == &finder) {
+        dir = 1;
+        return node;
+    }
+    kDTreeNode *left = find_parent_node_helper(node->left, finder, dir);
+    kDTreeNode *right = find_parent_node_helper(node->right, finder, dir);
+    return (left)? left : right;
+};
 kDTreeNode *kDTree::find_replacement_helper(kDTreeNode *node, int divisor, int idx, int &dim) {
     if(idx == divisor) {
         if(node->left == NULL) return node;
@@ -179,8 +193,14 @@ kDTreeNode *kDTree::find_replacement_helper(kDTreeNode *node, int divisor, int i
 kDTreeNode *kDTree::delete_helper(kDTreeNode *node, const vector<int> &point, int idx) {
     if(node == NULL) return NULL;
     // if on the left
-    if(point[idx] < node->data[idx]) node->left = delete_helper(node->left, point, (idx + 1) % (this->k));
-    if(point[idx] > node->data[idx]) node->right = delete_helper(node->right, point, (idx + 1) % (this->k));
+    if(point[idx] < node->data[idx]) {
+        node->left = delete_helper(node->left, point, (idx + 1) % (this->k));
+        return node;
+    }
+    if(point[idx] > node->data[idx]) {
+        node->right = delete_helper(node->right, point, (idx + 1) % (this->k));
+        return node;
+    }
     // assume we found the node
     bool find_flag = true;
     // if not at left
@@ -207,7 +227,14 @@ kDTreeNode *kDTree::delete_helper(kDTreeNode *node, const vector<int> &point, in
             int dim = (idx + 1) % (this->k);
             kDTreeNode *replacement = find_replacement_helper(node->right, divisor, (idx + 1) % (this->k), dim);
             for(int i = 0; i < this->k; ++i) node->data[i] = replacement->data[i];
-            replacement = delete_helper(replacement, replacement->data, dim);
+            int dir = 0;
+            kDTreeNode *pre_replacement = find_parent_node_helper(node, *replacement, dir);
+            if(dir == -1) {
+                pre_replacement->left = delete_helper(replacement, node->data, dim);
+            }
+            if(dir == 1) {
+                pre_replacement->right = delete_helper(replacement, node->data, dim);
+            }
         }
         // only left child case
         else {
@@ -215,9 +242,15 @@ kDTreeNode *kDTree::delete_helper(kDTreeNode *node, const vector<int> &point, in
             int dim = (idx + 1) % (this->k);
             kDTreeNode *replacement = find_replacement_helper(node->left, divisor, (idx + 1) % (this->k), dim);
             for(int i = 0; i < this->k; ++i) node->data[i] = replacement->data[i];
-            node->right = node->left;
-            node->left = NULL;
-            replacement = delete_helper(replacement, replacement->data, dim);
+            swap(node->right, node->left);
+            int dir = 0;
+            kDTreeNode *pre_replacement = find_parent_node_helper(node, *replacement, dir);
+            if(dir == -1) {
+                pre_replacement->left = delete_helper(replacement, node->data, dim);
+            }
+            if(dir == 1) {
+                pre_replacement->right = delete_helper(replacement, node->data, dim);
+            }
         }
     }
     return node;
@@ -225,7 +258,6 @@ kDTreeNode *kDTree::delete_helper(kDTreeNode *node, const vector<int> &point, in
 void kDTree::remove(const vector<int> &point)
 {
     if(this->k != point.size()) return;
-    if(search(point) == false) return;
     this->root = delete_helper(this->root, point, 0);
 };
 
@@ -254,18 +286,70 @@ bool kDTree::search(const vector<int> &point)
     return search_helper(this->root, point, 0);
 };
 
+void kDTree::merge(vector<vector<int>> &pointList, int left, int mid, int right, int idx) const {
+    int const left_size = mid - left + 1;
+    int const right_size = right - mid;
+    vector<vector<int>> left_sublist;
+    vector<vector<int>> right_sublist;
+
+    for(int i = 0; i < left_size; ++i) left_sublist.push_back(pointList[left + i]);
+    for(int i = 0; i < right_size; ++i) right_sublist.push_back(pointList[mid + 1 + i]);
+    int left_idx = 0, right_idx = 0, merged_idx = left;
+    while(left_idx < left_size && right_idx < right_size) {
+        if(left_sublist[left_idx][idx] <= right_sublist[right_idx][idx]) {
+            pointList[merged_idx] = left_sublist[left_idx];
+            ++left_idx;
+        }
+        else {
+            pointList[merged_idx] = right_sublist[right_idx];
+            ++right_idx;
+        }
+        ++merged_idx;
+    }
+    while(left_idx < left_size) {
+        pointList[merged_idx] = left_sublist[left_idx];
+        ++left_idx;
+        ++merged_idx;
+    }
+    while(right_idx < right_size) {
+        pointList[merged_idx] = right_sublist[right_idx];
+        ++right_idx;
+        ++merged_idx;
+    }
+};
+void kDTree::merge_sort_helper(vector<vector<int>> &pointList, int start, int end, int idx) const {
+    if(start >= end) return;
+    int mid = start + (end - start)/2;
+    merge_sort_helper(pointList, start, mid, idx);
+    merge_sort_helper(pointList, mid + 1, end, idx);
+    // cout << "merge " << start << " to " << end << " with mid = " << mid << endl;
+    merge(pointList, start, mid, end, idx);
+};
+kDTreeNode *kDTree::build_helper(vector<vector<int>> &pointList, int start, int end, int idx) {
+    if(start > end) return NULL;
+    // cout << "start = " << start << " end = " << end << endl;
+    merge_sort_helper(pointList, start, end, idx);
+    int mid = start + (end - start)/2;
+    kDTreeNode *node = new kDTreeNode(pointList[mid]);
+    node->left = build_helper(pointList, start, mid - 1, (idx + 1) % (this->k));
+    node->right = build_helper(pointList, mid + 1, end, (idx + 1) % (this->k));
+    return node;
+};
 void kDTree::buildTree(const vector<vector<int>> &pointList)
 {
-    return;
+    vector<vector<int>> list = pointList;
+    this->root = build_helper(list, 0, list.size() - 1, 0);
 };
-void kDTree::neighbour_finder(kDTreeNode *node, const vector<int> &target, kDTreeNode *best, int idx, long &best_distance) {
+
+void kDTree::neighbour_finder(kDTreeNode *node, const vector<int> &target, kDTreeNode *&best, int idx, long &best_distance) {
     if(!node) return;
+    // cout << "CURR : " << printkDTreeNode(*node) << " BEST : " << printkDTreeNode(*best) << endl;
     int dir = 0;
     if(target[idx] < node->data[idx]) {
         if(!node->left) {
-            best = node;
             for(int i = 0; i < this->k; ++i)
-                best_distance += (long)abs((target[i] - node->data[i])*(target[i] - node->data[i]));
+                best_distance += (long)abs(pow(target[i] - node->data[i], 2));
+            best = node;
             return;
         }
         neighbour_finder(node->left, target, best, (idx + 1) % (this->k), best_distance);
@@ -273,9 +357,9 @@ void kDTree::neighbour_finder(kDTreeNode *node, const vector<int> &target, kDTre
     }
     else {
         if(!node->right) {
-            best = node;
             for(int i = 0; i < this->k; ++i)
-                best_distance += (long)abs((target[i] - node->data[i])*(target[i] - node->data[i]));
+                best_distance += (long)abs(pow(target[i] - node->data[i], 2));
+            best = node;
             return;
         }
         neighbour_finder(node->right, target, best, (idx + 1) % (this->k), best_distance);
@@ -284,25 +368,107 @@ void kDTree::neighbour_finder(kDTreeNode *node, const vector<int> &target, kDTre
 
     long curr_distance = 0;
     for(int i = 0; i < this->k; ++i)
-        curr_distance += (long)abs((target[i] - node->data[i])*(target[i] - node->data[i]));
+        curr_distance += (long)abs(pow(target[i] - node->data[i], 2));
     if(curr_distance < best_distance) {
         best_distance = curr_distance;
         best = node;
     }
-    long plane_distance = abs((target[idx] - node->data[idx])*(target[idx] - node->data[idx]));
+    long plane_distance = abs(pow(target[idx] - node->data[idx], 2));
     if(best_distance >= plane_distance) {
+        best_distance = plane_distance;
         if(dir == -1) neighbour_finder(node->left, target, best, (idx + 1) % (this->k), best_distance);
         if(dir == 1) neighbour_finder(node->right, target, best, (idx + 1) % (this->k), best_distance);
     }
 };
-void kDTree::nearestNeighbour(const vector<int> &target, kDTreeNode *best)
+void kDTree::nearestNeighbour(const vector<int> &target, kDTreeNode *&best)
 {
     long best_distance = 0;
-    kDTreeNode *best_neighbour = NULL;
-    neighbour_finder(this->root, target, best_neighbour, 0, best_distance);
+    best = this->root;
+    neighbour_finder(this->root, target, best, 0, best_distance);
+    // cout << printkDTreeNode(*best) << endl;
 };
 
 void kDTree::kNearestNeighbour(const vector<int> &target, int k, vector<kDTreeNode *> &bestList)
 {
-    return;
+    kDTree temp(*this);
+    int number_of_neighbour = 0;
+    kDTreeNode *neighbour = temp.root;
+    while(number_of_neighbour < k) {
+        temp.nearestNeighbour(target, neighbour);
+        kDTreeNode *return_val = new kDTreeNode(neighbour->data);
+        bestList.push_back(return_val);
+        temp.remove(neighbour->data);
+        neighbour = temp.root;
+        ++number_of_neighbour;
+    }
+};
+
+kNN::kNN(int k) {
+    this->k = k;
+};
+void kNN::fit(Dataset &X_train, Dataset &y_train) {
+    this->X_train = &X_train;
+    this->y_train = &y_train;
+    vector<vector<int>> tree_data;
+    for(auto lst = X_train.data.begin(); lst != X_train.data.end(); ++lst) {
+        vector<int> temp;
+        for(auto it = (*lst).begin(); it != (*lst).end(); ++it) temp.push_back(*it);
+        tree_data.push_back(temp);
+    }
+    this->tree = new kDTree(tree_data[0].size());
+    tree->buildTree(tree_data);
+};
+Dataset kNN::predict(Dataset &X_test) {
+    Dataset y_pred;
+    y_pred.columnName.push_back("label");
+    int train_row = this->X_train->data.size();
+    vector<int> label_list;
+
+    for(auto lst = X_test.data.begin(); lst != X_test.data.end(); ++lst) {
+        label_list.clear();
+        vector<int> target;
+        for(auto it = (*lst).begin(); it != (*lst).end(); ++it) target.push_back(*it);
+        vector<kDTreeNode*> best_neighbour;
+        this->tree->kNearestNeighbour(target, this->k, best_neighbour);
+
+        vector<int> count(10, 0);
+        for(auto neighbour : best_neighbour) {
+            int idx = 0;
+            auto X_itr = this->X_train->data.begin();
+            vector<int> X_row;
+            for(auto ele_itr = (*X_itr).begin(); ele_itr != (*X_itr).end(); ++ele_itr) X_row.push_back(*ele_itr);
+            if(X_row == neighbour->data) {
+                auto y_itr = this->y_train->data.begin();
+                advance(y_itr, idx);
+                count[*(*y_itr).begin()]++;
+            }
+            X_row.clear();
+            ++idx;
+        }
+
+        int max_count = 0, num = 0;
+        for(int pos = 0; pos < 10; ++pos) {
+            if(max_count < count[pos]) {
+                num = pos;
+                max_count = count[pos];
+            }
+        }
+        list<int> pred;
+        pred.push_back(num);
+        y_pred.data.push_back(pred);
+    }
+    return y_pred;
+};
+double kNN::score(const Dataset &y_test, const Dataset &y_pred) {
+    int correct_count = 0;
+    list<list<int>> test_data = y_test.data;
+    list<list<int>> pred_data = y_pred.data;
+    int test_count = 0;
+    auto test_itr = test_data.begin();
+    auto pred_itr = pred_data.begin();
+    while(test_itr != test_data.end() && pred_itr != pred_data.end()) {
+        ++test_count;
+        if(*((*test_itr).begin()) == *((*pred_itr).begin())) ++correct_count;
+    }
+    return (double)correct_count / (double)test_count;
 };

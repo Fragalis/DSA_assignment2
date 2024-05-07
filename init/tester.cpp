@@ -12,7 +12,6 @@
 #include <list>
 
 using namespace std;
-
 struct kDTreeNode
 {
     vector<int> data;
@@ -24,62 +23,59 @@ struct kDTreeNode
         this->left = left;
         this->right = right;
     }
-};
-
-string printkDTreeNode(const kDTreeNode &node) {
-    stringstream ss;
-    ss << "(";
-    if(node.data.size() > 0) {
-        ss << node.data[0];
-        for(int i = 1; i < node.data.size(); ++i) {
-            ss << ",";
-            ss << node.data[i];
+    
+    friend ostream &operator<<(ostream &os, const kDTreeNode &node)
+    {
+        os << "(";
+        for (int i = 0; i < node.data.size(); i++)
+        {
+            os << node.data[i];
+            if (i != node.data.size() - 1)
+            {
+                os << ", ";
+            }
         }
+        os << ")";
+        return os;
     }
-    ss << ")";
-    return ss.str();
-}
-
-void print_tree(kDTreeNode *node, string prefix) {
-    if(!node) {
-        cout << "EMPTY" << endl;
-        return;
-    }
-    if(prefix == "") cout << "ROOT: ";
-    else cout << prefix << " ";
-    cout << printkDTreeNode(*node);
-    cout << "\n";
-    if(node->left) print_tree(node->left, prefix + "0");
-    if(node->right) print_tree(node->right, prefix + "1");
-}
+};
 
 class kDTree
 {
 private:
     int k;
-    // Helpers:
+
+    // Constructor - Destructor Helpers
     void clear() const;
     void clear_helper(kDTreeNode *node) const;
     void copy_helper(kDTreeNode *node);
     
-    string inorder_helper(kDTreeNode *node) const;
-    string preorder_helper(kDTreeNode *node) const;
-    string postorder_helper(kDTreeNode *node) const;
+    // Printer Helpers
+    void inorder_helper(kDTreeNode *node) const;
+    void preorder_helper(kDTreeNode *node) const;
+    void postorder_helper(kDTreeNode *node) const;
 
+    // Misc Helpers
     int height_record(kDTreeNode *node) const;
     int count_helper(kDTreeNode *node) const;
     int leaf_count_helper(kDTreeNode *node) const;
 
+    // Modify Helpers
     kDTreeNode *insert_helper(kDTreeNode *node, const vector<int> &point, int idx);
-    kDTreeNode *find_replacement_helper(kDTreeNode *node, int divisor, int idx, int &dim);
     kDTreeNode *find_parent_node_helper(kDTreeNode *node, const kDTreeNode &finder, int &dir);
+    kDTreeNode *find_replacement_helper(kDTreeNode *node, int divisor, int idx, int &dim);
     kDTreeNode *delete_helper(kDTreeNode *node, const vector<int> &point, int idx);
     bool search_helper(kDTreeNode *node, const vector<int> &point, int idx);
+
+    // Build Helpers
+    void merge(vector<vector<int>> &pointList, int left, int mid, int right, int idx) const;
+    void merge_sort_helper(vector<vector<int>> &pointList, int start, int end, int idx) const;
+    kDTreeNode *build_helper(vector<vector<int>> &pointList, int start, int end, int idx);
 
     void neighbour_finder(kDTreeNode *node, const vector<int> &target, kDTreeNode *&best, int idx, long &best_distance);
 public:
     kDTreeNode *root;
-    kDTree(int k = 2);
+    kDTree(int k);
     ~kDTree();
 
     const kDTree &operator=(const kDTree &other);
@@ -112,15 +108,14 @@ void kDTree::clear() const {
 void kDTree::clear_helper(kDTreeNode *node) const {
     if(!node) return;
     clear_helper(node->left);
-    node->left = NULL;
     clear_helper(node->right);
-    node->right = NULL;
     delete node;
+    return;
 };
 kDTree::~kDTree()
 {
     this->k = 0;
-    this->clear();
+    clear();
     this->root = NULL;
 };
 
@@ -147,43 +142,58 @@ kDTree::kDTree(const kDTree &other)
     copy_helper(traverse);
 };
 
-string kDTree::inorder_helper(kDTreeNode *node) const {
-    if(node == NULL) return "";
-    string res = "";
-    if(node->left) res += (inorder_helper(node->left) + " ");
-    res += printkDTreeNode(*node);
-    if(node->right) res += (" " + inorder_helper(node->right));
-    return res;
+void kDTree::inorder_helper(kDTreeNode *node) const {
+    if(node == NULL) return;
+    // string res = "";
+    if(node->left) {
+        inorder_helper(node->left);
+        cout << " ";
+    }
+    cout << *node;
+    if(node->right) {
+        cout << " ";
+        inorder_helper(node->right);
+    }
 }
 void kDTree::inorderTraversal() const
 {
-    cout << inorder_helper(this->root);
+    inorder_helper(this->root);
 };
 
-string kDTree::preorder_helper(kDTreeNode *node) const {
-    if(node == NULL) return "";
-    string res = "";
-    res += printkDTreeNode(*node);
-    if(node->left) res += (" " + preorder_helper(node->left));
-    if(node->right) res += (" " + preorder_helper(node->right));
-    return res;
-};
+void kDTree::preorder_helper(kDTreeNode *node) const {
+    if(node == NULL) return;
+    // string res = "";
+    cout << *node;
+    if(node->left) {
+        cout << " ";
+        preorder_helper(node->left);
+    }
+    if(node->right) {
+        cout << " ";
+        preorder_helper(node->right);
+    }
+}
 void kDTree::preorderTraversal() const
 {
-    cout << preorder_helper(this->root);
+    preorder_helper(this->root);
 };
 
-string kDTree::postorder_helper(kDTreeNode *node) const {
-    if(node == NULL) return "";
-    string res = "";
-    if(node->left) res += (postorder_helper(node->left) + " ");
-    if(node->right) res += (postorder_helper(node->right) + " ");
-    res += printkDTreeNode(*node);
-    return res;
-};
+void kDTree::postorder_helper(kDTreeNode *node) const {
+    if(node == NULL) return;
+    // string res = "";
+    if(node->left) {
+        postorder_helper(node->left);
+        cout << " ";
+    }
+    if(node->right) {
+        postorder_helper(node->right);
+        cout << " ";
+    }
+    cout << *node;
+}
 void kDTree::postorderTraversal() const
 {
-    cout << postorder_helper(this->root);
+    postorder_helper(this->root);
 };
 
 int kDTree::height_record(kDTreeNode *node) const {
@@ -370,10 +380,61 @@ bool kDTree::search(const vector<int> &point)
     return search_helper(this->root, point, 0);
 };
 
+void kDTree::merge(vector<vector<int>> &pointList, int left, int mid, int right, int idx) const {
+    int const left_size = mid - left + 1;
+    int const right_size = right - mid;
+    vector<vector<int>> left_sublist;
+    vector<vector<int>> right_sublist;
+
+    for(int i = 0; i < left_size; ++i) left_sublist.push_back(pointList[left + i]);
+    for(int i = 0; i < right_size; ++i) right_sublist.push_back(pointList[mid + 1 + i]);
+    int left_idx = 0, right_idx = 0, merged_idx = left;
+    while(left_idx < left_size && right_idx < right_size) {
+        if(left_sublist[left_idx][idx] <= right_sublist[right_idx][idx]) {
+            pointList[merged_idx] = left_sublist[left_idx];
+            ++left_idx;
+        }
+        else {
+            pointList[merged_idx] = right_sublist[right_idx];
+            ++right_idx;
+        }
+        ++merged_idx;
+    }
+    while(left_idx < left_size) {
+        pointList[merged_idx] = left_sublist[left_idx];
+        ++left_idx;
+        ++merged_idx;
+    }
+    while(right_idx < right_size) {
+        pointList[merged_idx] = right_sublist[right_idx];
+        ++right_idx;
+        ++merged_idx;
+    }
+};
+void kDTree::merge_sort_helper(vector<vector<int>> &pointList, int start, int end, int idx) const {
+    if(start >= end) return;
+    int mid = start + (end - start)/2;
+    merge_sort_helper(pointList, start, mid, idx);
+    merge_sort_helper(pointList, mid + 1, end, idx);
+    // cout << "merge " << start << " to " << end << " with mid = " << mid << endl;
+    merge(pointList, start, mid, end, idx);
+};
+kDTreeNode *kDTree::build_helper(vector<vector<int>> &pointList, int start, int end, int idx) {
+    if(start > end) return NULL;
+    // cout << "start = " << start << " end = " << end << endl;
+    merge_sort_helper(pointList, start, end, idx);
+    int mid = start + (end - start)/2;
+    kDTreeNode *node = new kDTreeNode(pointList[mid]);
+    node->left = build_helper(pointList, start, mid - 1, (idx + 1) % (this->k));
+    node->right = build_helper(pointList, mid + 1, end, (idx + 1) % (this->k));
+    return node;
+};
 void kDTree::buildTree(const vector<vector<int>> &pointList)
 {
-    return;
+    vector<vector<int>> list = pointList;
+    this->root = build_helper(list, 0, list.size() - 1, 0);
 };
+
 void kDTree::neighbour_finder(kDTreeNode *node, const vector<int> &target, kDTreeNode *&best, int idx, long &best_distance) {
     if(!node) return;
     // cout << "CURR : " << printkDTreeNode(*node) << " BEST : " << printkDTreeNode(*best) << endl;
@@ -428,41 +489,39 @@ void kDTree::kNearestNeighbour(const vector<int> &target, int k, vector<kDTreeNo
     kDTreeNode *neighbour = temp.root;
     while(number_of_neighbour < k) {
         temp.nearestNeighbour(target, neighbour);
-        bestList.push_back(neighbour);
+        kDTreeNode *return_val = new kDTreeNode(neighbour->data);
+        bestList.push_back(return_val);
         temp.remove(neighbour->data);
         neighbour = temp.root;
         ++number_of_neighbour;
     }
 };
 
-void test_print_node() {
-    vector<int> test = {};
-    kDTreeNode t(test);
-    cout << printkDTreeNode(t);
-}
-
 void test_solo_tree() {
     vector< vector<int> > store = 
     {
         {5, 6}, {2, 2}, {7, 3}, {2, 8}, {8, 1}, {9, 2}, {3, 5}
     };
-    int k = store[0].size();
-    kDTree *tree = new kDTree(k);
-    for(auto &v : store) {
-        tree->insert(v);
-    }
+    int k = 2;
+    kDTree tree(k);
+    tree.insert({5, 6});
+    tree.insert({2, 2});
+    // for(auto &v : store) {
+    //     tree.insert(v);
+    // }
 
-    print_tree(tree->root, "");
-    // tree->preorderTraversal();
+    // print_tree(tree->root, "");
+    tree.preorderTraversal();
     cout << endl;
-    // tree->inorderTraversal();
+    tree.inorderTraversal();
     cout << endl;
-    // tree->postorderTraversal();
+    tree.postorderTraversal();
     cout << endl;
-    for(auto &v : store) {
-        tree->remove(v);
-        print_tree(tree->root, "");
-    }
+    // for(auto &v : store) {
+    //     tree.remove(v);
+    //     tree.preorderTraversal();
+    //     cout << endl;
+    // }
 }
 
 void test_copy_tree() {
@@ -487,7 +546,7 @@ void test_copy_tree() {
 
     // assignment operator
     cout << "Assignment Operator: ";
-    kDTree ass_tree;
+    kDTree ass_tree(6);
     ass_tree = *tree;
     ass_tree.inorderTraversal();
     cout << endl;
@@ -530,7 +589,10 @@ void test_methods() {
 }
 
 void test_build_tree() {
-    return;
+    kDTree tree(2);
+    vector<vector<int>> pointList = {{5, 6}, {2, 2}, {7, 3}, {2, 8}, {8, 7}, {8, 1}, {9, 4}, {3, 5}};
+    tree.buildTree(pointList);
+    tree.preorderTraversal();
 }
 
 void test_neighbours() {
@@ -543,24 +605,23 @@ void test_neighbours() {
     for(auto &v : store) {
         tree->insert(v);
     }
-    print_tree(tree->root, "");
+    // print_tree(tree->root, "");
     vector<int> target = {9,3};
     kDTreeNode *neighbour;
     tree->nearestNeighbour(target, neighbour);
-    cout << "nearestNeighbour TEST: " << printkDTreeNode(*neighbour) << endl;
+    cout << "nearestNeighbour TEST: " << *neighbour << endl;
 
     vector<kDTreeNode*> neighbour_list;
-    tree->kNearestNeighbour(target, 3, neighbour_list);
+    tree->kNearestNeighbour(target, 5, neighbour_list);
     cout << "kNearestNeighbour TEST: " << endl;
-    for(kDTreeNode *node : neighbour_list) {
-        cout << printkDTreeNode(*node);
+    for(auto node : neighbour_list) {
+        cout << *node;
         cout << endl;
     }
 }
 
 int main() {
-    // test_print_node();
-    // test_solo_tree();
+    test_solo_tree();
     // test_copy_tree();
     // test_methods();
     // test_build_tree();

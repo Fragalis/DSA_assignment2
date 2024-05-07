@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "d:/DSA_Assignment/assignment2/init",
-      "program": "d:/DSA_Assignment/assignment2/init/build/Debug/outDebug",
+      "cwd": "d:/DSA_Assignment/assignment1/init",
+      "program": "d:/DSA_Assignment/assignment1/init/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
