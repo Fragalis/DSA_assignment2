@@ -1,4 +1,4 @@
-// #include "main.hpp"
+#include "main.hpp"
 // #include "Dataset.hpp"
 #include "kDTree.hpp"
 
@@ -144,8 +144,8 @@ int main(int argc, const char *argv[])
     // tc4();
     // tc5();
     // tc6();
-    tc7();
-    // tc8();
+    // tc7();
+    tc8();
     // tc9();
     return 0;
 }

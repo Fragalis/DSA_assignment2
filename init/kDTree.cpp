@@ -398,13 +398,10 @@ void kDTree::kNearestNeighbour(const vector<int> &target, int k, vector<kDTreeNo
     int number_of_neighbour = 0;
     kDTreeNode *neighbour = temp.root;
     while(number_of_neighbour < k) {
-        cout << number_of_neighbour << ": ";
         temp.nearestNeighbour(target, neighbour);
         kDTreeNode *return_val = new kDTreeNode(neighbour->data);
         bestList.push_back(return_val);
-        temp.preorderTraversal();
         temp.remove(neighbour->data);
-        cout << endl;
         neighbour = temp.root;
         ++number_of_neighbour;
     }
@@ -428,38 +425,39 @@ void kNN::fit(Dataset &X_train, Dataset &y_train) {
 Dataset kNN::predict(Dataset &X_test) {
     Dataset y_pred;
     y_pred.columnName.push_back("label");
-    int train_row = this->X_train->data.size();
-    vector<int> label_list;
 
     for(auto lst = X_test.data.begin(); lst != X_test.data.end(); ++lst) {
-        label_list.clear();
         vector<int> target;
         for(auto it = (*lst).begin(); it != (*lst).end(); ++it) target.push_back(*it);
         vector<kDTreeNode*> best_neighbour;
         this->tree->kNearestNeighbour(target, this->k, best_neighbour);
-
+        
         vector<int> count(10, 0);
-        for(auto neighbour : best_neighbour) {
+        for(auto const &neighbour : best_neighbour) {
             int idx = 0;
-            auto X_itr = this->X_train->data.begin();
-            vector<int> X_row;
-            for(auto ele_itr = (*X_itr).begin(); ele_itr != (*X_itr).end(); ++ele_itr) X_row.push_back(*ele_itr);
-            if(X_row == neighbour->data) {
-                auto y_itr = this->y_train->data.begin();
-                advance(y_itr, idx);
-                count[*(*y_itr).begin()]++;
+            for(auto X_itr = this->X_train->data.begin(); X_itr != this->X_train->data.end(); ++X_itr) {
+                vector<int> X_row;
+                for(auto ele_itr = (*X_itr).begin(); ele_itr != (*X_itr).end(); ++ele_itr) {
+                    X_row.push_back(*ele_itr);
+                }
+                if(X_row == neighbour->data) {
+                    auto y_itr = this->y_train->data.begin();
+                    advance(y_itr, idx);
+                    count[*(*y_itr).begin()]++;
+                }
+                ++idx;
             }
-            X_row.clear();
-            ++idx;
         }
 
         int max_count = 0, num = 0;
         for(int pos = 0; pos < 10; ++pos) {
+            // cout << count[pos] << " ";
             if(max_count < count[pos]) {
                 num = pos;
                 max_count = count[pos];
             }
         }
+        // cout << endl;
         list<int> pred;
         pred.push_back(num);
         y_pred.data.push_back(pred);
@@ -468,14 +466,14 @@ Dataset kNN::predict(Dataset &X_test) {
 };
 double kNN::score(const Dataset &y_test, const Dataset &y_pred) {
     int correct_count = 0;
-    list<list<int>> test_data = y_test.data;
-    list<list<int>> pred_data = y_pred.data;
     int test_count = 0;
-    auto test_itr = test_data.begin();
-    auto pred_itr = pred_data.begin();
-    while(test_itr != test_data.end() && pred_itr != pred_data.end()) {
+    auto test_itr = y_test.data.begin();
+    auto pred_itr = y_pred.data.begin();
+    while(test_itr != y_test.data.end() && pred_itr != y_pred.data.end()) {
         ++test_count;
         if(*((*test_itr).begin()) == *((*pred_itr).begin())) ++correct_count;
+        ++test_itr;
+        ++pred_itr;
     }
     return (double)correct_count / (double)test_count;
 };
